@@ -1,45 +1,20 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "smv_canbus.h"
 #include "smv_board_enums.h"
 
 CAN_HandleTypeDef hcan1;
-
 CANBUS can1;
 
-double   btn_dbg[DAQ_Button + 1] = {0};
+/* data array */
+double btn_dbg[DAQ_Button + 1] = {0};
 
 UART_HandleTypeDef huart2;
-
-
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
 
@@ -48,7 +23,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
 
-  /* USER CODE BEGIN 2 */
+  /* init can with the HS2 board (for testing) */
   can1 = CAN_new();
 
   can1.init(&can1, HS2, &hcan1);
@@ -57,24 +32,21 @@ int main(void)
 
   can1.begin(&can1);
 
-  /* USER CODE END 2 */
-
-
   while (1)
   {
-      if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0)
+      if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0) /* check if there are messages to recieve */
       {
           if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &can1.RxHeaderFIFO0, can1.RxDataFIFO0) == HAL_OK)
           {
-              CAN_Interrupt_Helper(&can1);
+              CAN_Interrupt_Helper(&can1); /* init hardware id */
 
-              if (can1.getHardwareRaw(&can1) == UI)
+              if (can1.getHardwareRaw(&can1) == UI) /* check if data is recieved from UI board */
               {
                   int msg = can1.getDataTypeRaw(&can1);
 
                   if (msg <= DAQ_Button)
                   {
-                      btn_dbg[msg] = can1.getData(&can1);
+                      btn_dbg[msg] = can1.getData(&can1); /* check data and add into array */
 
                   }
               }

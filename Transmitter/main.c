@@ -1,33 +1,14 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "button.h"
 #include "smv_canbus.h"
 
-/* Private variables ---------------------------------------------------------*/
+
 CAN_HandleTypeDef hcan1;
 CANBUS can1;
 
 UART_HandleTypeDef huart2;
 
-/* USER CODE BEGIN PV */
+// struct to handle button counters
 typedef struct
 {
     uint32_t reverse;
@@ -43,6 +24,7 @@ typedef struct
 
 ButtonDebug btn_dbg = {0};
 
+// button array to hold GPIO pins, counters, and message headers
 PushButton buttons[] =
 {
 		{ GPIOA, GPIO_PIN_0,  GPIO_PIN_SET, 0, &btn_dbg.reverse,   Reverse    }, // reverse
@@ -56,16 +38,11 @@ PushButton buttons[] =
 		{ GPIOA, GPIO_PIN_10, GPIO_PIN_SET, 0, &btn_dbg.estop,     Motor      }  // e-stop
 };
 
-/* USER CODE END PV */
-
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
+
 int main(void)
 {
   HAL_Init();
@@ -73,28 +50,28 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
 
-  /* USER CODE BEGIN 2 */
+  /* init can with the board being UI */
   can1 = CAN_new();
   can1.init(&can1, UI, &hcan1);
 
   can1.begin(&can1);
 
+  /* init all variables to be equal to the current pin states */
   for (uint32_t i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
   {
       Button_Init(&buttons[i]);
   }
-  /* USER CODE END 2 */
 
-  /* USER CODE BEGIN WHILE */
+
   while (1)
   {
       for (uint32_t i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
       {
-          Button_UpdateCAN(&buttons[i], &can1);
+          Button_UpdateCAN(&buttons[i], &can1); /* detect button updates and send over CAN */
       }
       HAL_Delay(5);
   }
-    /* USER CODE END WHILE */
+
 }
 
 /**
