@@ -5,28 +5,31 @@
 #include "stm32f4xx_hal.h"
 #include "smv_canbus.h"
 
+
+/* Debounce time in milliseconds */
+#define BUTTON_DEBOUNCE_MS 50
+
 /* struct to hold all the data per button */
 typedef struct
 {
     GPIO_TypeDef *port;
-    uint16_t      pin;
+    uint16_t pin;
 
-    uint8_t       last_state;
-    uint32_t      last_press_time; /* used for debounce timer */
+    GPIO_PinState last_raw_state;   // last immediate read
+    GPIO_PinState stable_state;     // debounced stable state
 
-    uint32_t     *counter; /* counter to track button presses (send over CAN) */
+    uint32_t last_debounce_time;
 
-    enum UIMessage msg; /* can message header */
+    uint32_t *counter;              // optional debug counter (can be NULL)
+    enum UIMessage msg;              // CAN message enum
+
 } PushButton;
 
-/**
- * @brief Initialize button state (must be called once after GPIO init)
- */
+/* Initialize button state */
 void Button_Init(PushButton *btn);
 
-/**
- * @brief Update button debounce state (call periodically)
- */
+/* Update button and send ON/OFF over CAN */
 void Button_UpdateCAN(PushButton *btn, CANBUS *can);
 
 #endif
+

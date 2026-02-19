@@ -11,15 +11,18 @@ UART_HandleTypeDef huart2;
 // struct to handle button counters
 typedef struct
 {
-    uint32_t reverse;
-    uint32_t hazard;
-    uint32_t headlights;
-    uint32_t wipers;
-    uint32_t horn;
     uint32_t left;
     uint32_t right;
-    uint32_t supercap;
+    uint32_t reverse;
+    uint32_t headlights;
+    uint32_t wipers;
+    uint32_t hazard;
+    uint32_t spare_button;
+    uint32_t spare_switch;
     uint32_t estop;
+    uint32_t horn;
+    uint32_t supercap;
+    uint32_t DAQ_button;
 } ButtonDebug;
 
 ButtonDebug btn_dbg = {0};
@@ -27,16 +30,22 @@ ButtonDebug btn_dbg = {0};
 // button array to hold GPIO pins, counters, and message headers
 PushButton buttons[] =
 {
-		{ GPIOA, GPIO_PIN_0,  GPIO_PIN_SET, 0, &btn_dbg.reverse,   Reverse    }, // reverse
-		{ GPIOA, GPIO_PIN_1,  GPIO_PIN_SET, 0, &btn_dbg.hazard,    Hazard     }, // hazard
-		{ GPIOB, GPIO_PIN_0,  GPIO_PIN_SET, 0, &btn_dbg.headlights, Headlights }, // headlights
-		{ GPIOC, GPIO_PIN_2,  GPIO_PIN_SET, 0, &btn_dbg.wipers,    Wipers     }, // wipers
-		{ GPIOC, GPIO_PIN_3,  GPIO_PIN_SET, 0, &btn_dbg.horn,      Horn       }, // horn
-		{ GPIOA, GPIO_PIN_15, GPIO_PIN_SET, 0, &btn_dbg.left,      Blink_Left }, // left
-		{ GPIOB, GPIO_PIN_7,  GPIO_PIN_SET, 0, &btn_dbg.right,     Blink_Right}, // right
-		{ GPIOB, GPIO_PIN_5,  GPIO_PIN_SET, 0, &btn_dbg.supercap,  DAQ_Button }, // supercap
-		{ GPIOA, GPIO_PIN_10, GPIO_PIN_SET, 0, &btn_dbg.estop,     Motor      }  // e-stop
+    { GPIOA, GPIO_PIN_15, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.left,         Blink_Left  }, // left
+    { GPIOB, GPIO_PIN_7,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.right,        Blink_Right }, // right
+    { GPIOA, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.reverse,      Reverse     }, // reverse
+    { GPIOB, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.headlights,   Headlights  }, // headlights
+    { GPIOC, GPIO_PIN_2,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.wipers,       Wipers      }, // wipers
+    { GPIOA, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.hazard,       Hazard      }, // hazard
+	{ GPIOC, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_button, Button      }, // spare button
+    { GPIOA, GPIO_PIN_4,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_switch, Switch      }, // spare switch
+    { GPIOA, GPIO_PIN_10, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.estop,        Motor       }, // e-stop
+    { GPIOC, GPIO_PIN_3,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.horn,         Horn        }, // horn
+    { GPIOB, GPIO_PIN_5,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.supercap,     DAQ_Button  }, // supercap
+	{ GPIOC, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.DAQ_button,   DAQ_Button  }, // spare switch
 };
+
+#define NUM_BUTTONS (sizeof(buttons)/sizeof(buttons[0]))
+
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -57,7 +66,7 @@ int main(void)
   can1.begin(&can1);
 
   /* init all variables to be equal to the current pin states */
-  for (uint32_t i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
+  for (uint32_t i = 0; i < NUM_BUTTONS; i++)
   {
       Button_Init(&buttons[i]);
   }
@@ -65,7 +74,7 @@ int main(void)
 
   while (1)
   {
-      for (uint32_t i = 0; i < sizeof(buttons)/sizeof(buttons[0]); i++)
+      for (uint32_t i = 0; i < NUM_BUTTONS; i++)
       {
           Button_UpdateCAN(&buttons[i], &can1); /* detect button updates and send over CAN */
       }
@@ -73,7 +82,6 @@ int main(void)
   }
 
 }
-
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -181,20 +189,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PC2 PC3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
+  /*Configure GPIO pins : PC0 PC1 PC2 PC3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA1 PA10 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_15;
+  /*Configure GPIO pins : PA0 PA1 PA4 PA10
+                           PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_10
+                          |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -227,11 +231,14 @@ static void MX_GPIO_Init(void)
   */
 void Error_Handler(void)
 {
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-  while(1);
+  while (1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */
 }
-
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number

@@ -7,44 +7,47 @@
  * method to initialize button states
  *
  */
-void Button_Init(PushButton *btn) {
-  btn->last_state = HAL_GPIO_ReadPin(btn->port, btn->pin);
+void Button_Init(PushButton *btn)
+{
+    GPIO_PinState state = HAL_GPIO_ReadPin(btn->port, btn->pin);
 
-  btn->last_press_time = 0;
+    btn->last_raw_state     = state;
+    btn->stable_state       = state;
+    btn->last_debounce_time = HAL_GetTick();
 }
 
 /*
  * method to detect button pushes and send accordingly over can
  */
-void Button_UpdateCAN(PushButton *btn, CANBUS *can) {
-  GPIO_PinState state = HAL_GPIO_ReadPin(btn->port, btn->pin);
-  uint32_t now = HAL_GetTick();
+void Button_UpdateCAN(PushButton *btn, CANBUS *can)
+{
+    GPIO_PinState raw_state = HAL_GPIO_ReadPin(btn->port, btn->pin);
+    uint32_t now = HAL_GetTick();
 
-  if (btn->last_state == GPIO_PIN_SET &&
-      state == GPIO_PIN_RESET) /* check if state is changed from initial */
-  {
-    if (btn->last_press_time == 0 ||
-        (now - btn->last_press_time) >=
-            BUTTON_DEBOUNCE_MS) /* check for debounce timer */
+    /* If raw state changed, reset debounce timer */
+    if (raw_state != btn->last_raw_state)
     {
-      btn->last_press_time = now;
-
-      if (btn->counter) {
-        (*btn->counter)++; /* increment counter and send over CAN with the
-                              message */
-
-        can->send(can, (double)(*btn->counter), btn->msg);
-        HAL_Delay(10);
-      }
+        btn->last_raw_state = raw_state;
+        btn->last_debounce_time = now;
     }
-  }
-  // on rising edge/release
-  else if (btn->last_state == GPIO_PIN_RESET && state == GPIO_PIN_SET) {
-    // check if an actual release not debounce based on last press time
-    if (now - btn->last_press_time >= BUTTON_DEBOUNCE_MS) {
-      btn->last_press_time = now;
-    }
-  }
 
-  btn->last_state = state; /* if button is "unpressed" set state back */
+    /* If input has remained stable long enough */
+    if ((now - btn->last_debounce_time) >= BUTTON_DEBOUNCE_MS)
+    {
+        /* If debounced state changed */
+        if (btn->stable_state != raw_state)
+        {
+            btn->stable_state = raw_state;
+
+
+            uint8_t value = (raw_state == GPIO_PIN_RESET) ? 1 : 0; /* sets ON/OFF */
+
+            can->send(can, (double)value, btn->msg);
+
+            if (btn->counter)
+            {
+                (*btn->counter)++;
+            }
+        }
+    }
 }
