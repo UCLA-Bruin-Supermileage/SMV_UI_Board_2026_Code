@@ -40,14 +40,15 @@ void Button_UpdateCAN(PushButton *btn, CANBUS *can)
             btn->stable_state = raw_state;
 
 
-            uint8_t value = (raw_state == GPIO_PIN_RESET) ? 1 : 0; /* sets ON/OFF */
+           *btn->counter = (raw_state == GPIO_PIN_RESET) ? 1 : 0; /* sets ON/OFF */
 
-            can->send(can, (double)value, btn->msg);
 
-            if (btn->counter)
-            {
-                (*btn->counter)++;
-            }
+           can->send(can, (double)(*btn->counter), btn->msg);
+
+//            if (btn->counter)
+//            {
+//                (*btn->counter)++;
+//            }
         }
     }
 }
