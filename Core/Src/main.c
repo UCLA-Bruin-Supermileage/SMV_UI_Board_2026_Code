@@ -13,16 +13,17 @@ typedef struct
 {
     uint32_t left;
     uint32_t right;
+    uint32_t regen;
     uint32_t reverse;
+    uint32_t hazard;
+    uint32_t spare_switch;
     uint32_t headlights;
     uint32_t wipers;
-    uint32_t hazard;
-    uint32_t spare_button;
-    uint32_t spare_switch;
-    uint32_t estop;
-    uint32_t horn;
-    uint32_t supercap;
     uint32_t DAQ_button;
+    uint32_t horn;
+    uint32_t spare_button;
+    uint32_t supercap;
+    uint32_t estop;
 } ButtonDebug;
 
 ButtonDebug btn_dbg = {0};
@@ -32,16 +33,17 @@ PushButton buttons[] =
 {
     { GPIOA, GPIO_PIN_15, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.left,         Blink_Left  }, // left
     { GPIOB, GPIO_PIN_7,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.right,        Blink_Right }, // right
+    { GPIOC, GPIO_PIN_13, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.regen,        Reverse     }, // regen (dupe reverse)
     { GPIOA, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.reverse,      Reverse     }, // reverse
+    { GPIOA, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.hazard,       Hazard      }, // hazard
+    { GPIOA, GPIO_PIN_4,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_switch, Switch      }, // spare switch
     { GPIOB, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.headlights,   Headlights  }, // headlights
     { GPIOC, GPIO_PIN_2,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.wipers,       Wipers      }, // wipers
-    { GPIOA, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.hazard,       Hazard      }, // hazard
-	{ GPIOC, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_button, Button      }, // spare button
-    { GPIOA, GPIO_PIN_4,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_switch, Switch      }, // spare switch
-    { GPIOA, GPIO_PIN_10, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.estop,        Motor       }, // e-stop
+	{ GPIOC, GPIO_PIN_1,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.DAQ_button,   DAQ_Button  }, // DAQ button
     { GPIOC, GPIO_PIN_3,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.horn,         Horn        }, // horn
+	{ GPIOC, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.spare_button, Button      }, // spare button
     { GPIOB, GPIO_PIN_5,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.supercap,     DAQ_Button  }, // supercap
-	{ GPIOC, GPIO_PIN_0,  GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.DAQ_button,   DAQ_Button  }, // spare switch
+    { GPIOA, GPIO_PIN_10, GPIO_PIN_SET, GPIO_PIN_SET, 0, &btn_dbg.estop,        Motor       }, // e-stop
 };
 
 #define NUM_BUTTONS (sizeof(buttons)/sizeof(buttons[0]))
